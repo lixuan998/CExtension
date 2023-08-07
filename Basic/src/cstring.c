@@ -11,7 +11,7 @@ CString * CStringConstructor(char * __data)
     _cstring->append_c_char =_CStringAppendChar;
     _cstring->append_cstring =_CStringAppendCString;
     _cstring->append_c_string =_CStringAppendString;
-    _cstring->substr =_CStringSubStr;˜
+    _cstring->substr =_CStringSubStr;
     _cstring->split = _CStringSplit;
 
     char *_tmp_ptr = __data;

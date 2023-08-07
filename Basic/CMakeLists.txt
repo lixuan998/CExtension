@@ -14,4 +14,4 @@ file(
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(Core STATIC ${SOURCE_FILE_SET})
+add_library(CBasic STATIC ${SOURCE_FILE_SET})
