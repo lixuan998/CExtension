@@ -1,212 +1,153 @@
 #include "cstring.h"
 
-CString * CStringConstructor(char * __data)
+CString * create_cstring(char *data)
 {
-    CString * _cstring = (CString *)malloc(sizeof(struct _CString));
-    _cstring->_data = CVectorConstructor();
-    _cstring->_len = 0;
-    _cstring->raw_data = _CStringRawData;
-    _cstring->at = _CStringAt;
-    _cstring->append_cchar =_CStringAppendCChar;
-    _cstring->append_c_char =_CStringAppendChar;
-    _cstring->append_cstring =_CStringAppendCString;
-    _cstring->append_c_string =_CStringAppendString;
-    _cstring->substr =_CStringSubStr;
-    _cstring->split = _CStringSplit;
-
-    char *_tmp_ptr = __data;
-
-    char *_word;
-    CChar *_tmp_cchar;
-    while(*_tmp_ptr != '\0')
+    CString *cstring = (CString *)malloc(sizeof(struct _CString));
+    if(cstring == NULL)
     {
-        if(((*_tmp_ptr) & CODEX_1_MASK) == CODEX_1_RESULT)
+        perror("in func \"create_cstring\": cstring malloc failed");
+        return NULL;
+    }
+    cstring -> len = 0;
+    cstring -> data = (CChar **)malloc(sizeof(struct _CChar *) * INIT_LEN);
+    if(cstring -> data == NULL)
+    {
+        perror("in func \"create_cstring\": cstring -> data malloc failed");
+        return NULL;
+    }
+    cstring = append_cstring(cstring, data);
+    if(cstring == NULL)
+    {
+        perror("in func \"create_cstring\": append_cstring failed");
+        free(cstring -> data);
+        free(cstring);
+        cstring = NULL;
+    }
+    printf("len2: %d\n", cstring -> len);
+    return cstring;
+}
+
+CString * append_cstring(CString * cstring, char *append_str)
+{
+    
+    if(cstring == NULL)
+    {
+        perror("in func \"append_cstring\": cstring is null");
+        return NULL;
+    }
+    char *word;
+    while((*append_str) != '\0')
+    {
+        word = NULL;
+        if(cstring -> len % INIT_LEN == 0 && cstring -> len != 0)
         {
-            _word = (char *)malloc(sizeof(char) * 2);
-            memset(_word, 0, sizeof(char) * 2);
-            memcpy(_word, _tmp_ptr, 1);
-            _tmp_ptr += 1;
-            _tmp_cchar = CCharConstructor(_word, WITHOUT_COPY);
-            _cstring->_data->push_back(_cstring->_data, _tmp_cchar, AUTO_FREE);
-            _cstring->_len ++;
+            cstring = (CString *)realloc(cstring, cstring -> len + INIT_LEN);
+            printf("reallo\n");
+            if(cstring == NULL)
+            {
+                perror("in func \"append_cstring\": realloc failed");
+                return NULL;
+            }
         }
-        else if(((*_tmp_ptr) & CODEX_2_MASK) == CODEX_2_RESULT)
+        if(((*append_str) & ENCODING_1_MASK) == ENCODING_1_RESULT)
         {
-            _word = (char *)malloc(sizeof(char) * 3);
-            memset(_word, 0, sizeof(char) * 3);
-            memcpy(_word, _tmp_ptr, 2);
-            _tmp_ptr += 2;
-            _tmp_cchar = CCharConstructor(_word, WITHOUT_COPY);
-            _cstring->_data->push_back(_cstring->_data, _tmp_cchar, AUTO_FREE);
-            _cstring->_len ++;
+            word = (char *)malloc(sizeof(char) * 2);
+            if(word == NULL)
+            {
+                perror("in func \"append_cstring\": malloc failed");
+                return NULL;
+            }
+            memcpy(word, append_str, 1 * sizeof(char));
+            word[1] = '\0';
+            append_str += 1;
         }
-        else if(((*_tmp_ptr) & CODEX_3_MASK) == CODEX_3_RESULT)
+        else if(((*append_str) & ENCODING_2_MASK) == ENCODING_2_RESULT)
         {
-            _word = (char *)malloc(sizeof(char) * 4);
-            memset(_word, 0, sizeof(char) * 4);
-            memcpy(_word, _tmp_ptr, 3);
-            _tmp_ptr += 3;
-            _tmp_cchar = CCharConstructor(_word, WITHOUT_COPY);
-            _cstring->_data->push_back(_cstring->_data, _tmp_cchar, AUTO_FREE);
-            _cstring->_len ++;
+            word = (char *)malloc(sizeof(char) * 3);
+            if(word == NULL)
+            {
+                perror("in func \"append_cstring\": malloc failed");
+                return NULL;
+            }
+            memcpy(word, append_str, 2 * sizeof(char));
+            word[2] = '\0';
+            append_str += 2;
         }
-        else if(((*_tmp_ptr) & CODEX_4_MASK) == CODEX_4_RESULT)
+        else if(((*append_str) & ENCODING_3_MASK) == ENCODING_3_RESULT)
         {
-            _word = (char *)malloc(sizeof(char) * 5);
-            memset(_word, 0, sizeof(char) * 5);
-            memcpy(_word, _tmp_ptr, 4);
-            _tmp_ptr += 4;
-            _tmp_cchar = CCharConstructor(_word, WITHOUT_COPY);
-            _cstring->_data->push_back(_cstring->_data, _tmp_cchar, AUTO_FREE);
-            _cstring->_len ++;
+            word = (char *)malloc(sizeof(char) * 4);
+            if(word == NULL)
+            {
+                perror("in func \"append_cstring\": malloc failed");
+                return NULL;
+            }
+            memcpy(word, append_str, 3 * sizeof(char));
+            word[3] = '\0';
+            append_str += 3;
+        }
+        else if(((*append_str) & ENCODING_4_MASK) == ENCODING_4_RESULT)
+        {
+            word = (char *)malloc(sizeof(char) * 5);
+            if(word == NULL)
+            {
+                perror("in func \"append_cstring\": malloc failed");
+                return NULL;
+            }
+            memcpy(word, append_str, 4 * sizeof(char));
+            word[4] = '\0';
+            append_str += 4;
         }
         else
         {
-            perror("cstring.c line 48 unrecognized format");
+            perror("in func \"append_cstring\": unknown encoding type");
             return NULL;
         }
+        cstring -> data[cstring -> len ++] = create_cchar(word);
     }
-
-    _word = (char *)malloc(sizeof(char) * 2);
-    memset(_word, 0, sizeof(char) * 2);
-    memcpy(_word, "\0", 1);
-    _tmp_cchar = CCharConstructor(_word, WITHOUT_COPY);
-    _cstring->_data->push_back(_cstring->_data, _tmp_cchar, AUTO_FREE);
-    _cstring->_len ++;
-
-    return _cstring;
+    return cstring;
 }
 
-void CStringDestructor(void ** _v_cstring)
+char * raw_cstring(CString * cstring)
 {
-    CString **_cstring = (CString **)_v_cstring;
-    CVectorDestructor((void**)(&((*_cstring)->_data)), CCharDestructor);
-    free(*_cstring);
-    (*_cstring) = NULL;
+    int data_len = 1;
+    for(int i = 0; i < cstring -> len; i++)
+    {
+        CChar *cchar = cstring -> data[i];
+        data_len += cchar -> len;
+        printf("%d, %s\n", i, cchar -> data); 
+    }
+
+    char *raw_data = (char *)malloc(sizeof(char) * data_len);
+    char *ptr = raw_data;
+    for(int i = 0; i < cstring -> len; ++ i)
+    {
+        CChar *cchar = cstring -> data[i];
+        memcpy(ptr, cchar -> data, cchar -> len * sizeof(char));
+        ptr += cchar -> len;
+    }
+    raw_data[data_len] = '\0';
+    return raw_data;
 }
 
-char * _CStringRawData(CString * _cstring)
+CString * substr_cstring(CString *origin, int from, int length)
 {
-    char *_raw_data = (char *)malloc(_cstring->_len * sizeof(char) + 1);
-    char *_raw_data_ptr = _raw_data;
-    
-    for(int i = 0; i < _cstring->_len; ++ i)
+    char *substr_data;
+    int data_len = 1;
+    for(int i = from; i < length; ++ i)
     {
-        CChar *_tmp_cchar_ptr = (CChar *)(_cstring->_data->at(_cstring->_data, i));
-        memcpy(_raw_data_ptr, _tmp_cchar_ptr->_data_ptr, _tmp_cchar_ptr->_len);
-        _raw_data_ptr += _tmp_cchar_ptr->_len;
+        CChar *cchar = origin -> data[i];
+        data_len += cchar -> len;
     }
 
-    return _raw_data;
-}
-
-CChar * _CStringAt(CString * _cstring, int _index)
-{
-    if(_index >= _cstring->_len) return NULL;
-    else
+    substr_data = (char *)malloc(sizeof(char) * data_len);
+    char *ptr = substr_data;
+    for(int i = from; i < length; ++ i)
     {
-        return _cstring->_data->at(_cstring->_data, _index);
+        CChar *cchar = origin -> data[i];
+        memcpy(ptr, cchar -> data, cchar -> len * sizeof(char));
+        ptr += cchar -> len;
     }
-}
-
-void _CStringAppendCChar(CString * _cstring, CChar * _cchar)
-{
-    if(_cchar == NULL) return;
-    CChar *_tmp_end = CCharConstructor("\0", WITH_COPY);
-    CChar *_cstring_back = _cstring->_data->back(_cstring->_data);
-
-    if(_cstring_back->equal(_cstring_back, _tmp_end))
-    {
-        _cstring->_data->pop_back(_cstring->_data, CCharDestructor);
-        _cstring->_len --;
-    }
-
-    _cstring->_data->push_back(_cstring->_data, _cchar, AUTO_FREE);
-    _cstring->_len ++;
-
-    if(!_cchar->equal(_cchar, _tmp_end))
-    {
-        _cstring->_data->push_back(_cstring->_data, _tmp_end, AUTO_FREE);
-        _cstring->_len ++;
-    }
-    else
-    {
-        CCharDestructor((void **)(&_tmp_end));
-    }
-}
-
-void _CStringAppendChar(CString *_cstring, char *_c_string, int _copy_flag)
-{
-    if(_c_string == NULL || (_copy_flag != 0 && _copy_flag != 1)) return;
-    CChar *_tmp_cchar = CCharConstructor(_c_string, _copy_flag);
-    _cstring->append_cchar(_cstring, _tmp_cchar);
-}
-
-void _CStringAppendCString(CString *_cstring, CString *_append_cstring)
-{
-    if(_append_cstring->_len <= 0) return;
-    for(int i = 0; i < _append_cstring->_len; ++ i)
-    {
-        _cstring->append_cchar(_cstring, _append_cstring->at(_append_cstring, i));
-    }
-}
-
-void _CStringAppendString(CString *_cstring, char *_append_c_string)
-{
-    CString *_tmp_cstring = CStringConstructor(_append_c_string);
-    _cstring->append_cstring(_cstring, _tmp_cstring);
-}
-
-CString * _CStringSubStr(CString * _cstring, int _begin, int _end)
-{
-    if(_begin < 0 || _begin >= _cstring->_len || _end < 0 || _end > _cstring->_len || _begin > _end)
-    {
-        return NULL;
-    }
-    CString *_result_cstr = CStringConstructor("");
-    for(int i = _begin; i < _end; ++ i)
-    {
-        CChar * _tmp_cchar = _cstring->at(_cstring, i);
-        _result_cstr->append_cchar(_result_cstr, _tmp_cchar);
-    }
-    CChar *_tmp_end = CCharConstructor("\0", WITH_COPY);
-    CChar *_tmp_back = _result_cstr->_data->back(_result_cstr->_data);
-
-    if(_tmp_back->equal(_tmp_back, _tmp_end))
-        CCharDestructor((void **)(&_tmp_end));
-    else 
-        _result_cstr->append_cchar(_result_cstr, _tmp_end);
-    return _result_cstr;
-}
-
-CVector * _CStringSplit(CString * _cstring, CChar * _cchar)
-{
-    CVector *_result_vector = CVectorConstructor();
-    CString *_tmp_cstring;
-
-    int _begin = 0;
-    for(int i = 0; i < _cstring->_len; i++)
-    {
-        if(_cstring->at(_cstring, i)->equal(_cstring->at(_cstring, i), _cchar))
-        {
-            if(_begin < i)
-            {
-                _tmp_cstring = _cstring->substr(_cstring, _begin, i);
-                _result_vector->push_back(_result_vector, _tmp_cstring, AUTO_FREE);
-            }
-
-            _begin = i + 1;
-        }
-    }
-
-    if(_begin < _cstring->_len - 1)
-    {
-        _tmp_cstring = _cstring->substr(_cstring, _begin, _cstring->_len);
-        _result_vector->push_back(_result_vector, _tmp_cstring, AUTO_FREE);
-    }
-        
-    
-    if(_result_vector->_rear == 0)
-        CVectorDestructor((void**)(&_result_vector), CStringDestructor);
-    return _result_vector;
+    substr_data[data_len] = '\0';
+    CString * substr = create_cstring(substr_data);
+    return substr;
 }

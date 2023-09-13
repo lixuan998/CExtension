@@ -56,3 +56,8 @@ dkms.conf
 
 #vscode config files
 .vscode/
+
+#MacOs config files
+**/.DS_Store
+
+Demo/
