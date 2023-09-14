@@ -1,3 +1,10 @@
+/**
+ * @author climatex
+ * @date 2023-Sep-11
+ * @version 1.0.1
+ * @file cstring.c
+*/
+
 #include "cstring.h"
 
 CString * create_cstring(char *data)
@@ -9,7 +16,7 @@ CString * create_cstring(char *data)
         return NULL;
     }
     cstring -> len = 0;
-    cstring -> data = (CChar **)malloc(sizeof(struct _CChar *) * INIT_LEN);
+    cstring -> data = (CChar **)malloc(sizeof(struct _CChar *) * INIT_CSTRING_LEN);
     if(cstring -> data == NULL)
     {
         perror("in func \"create_cstring\": cstring -> data malloc failed");
@@ -39,9 +46,9 @@ CString * append_cstring(CString * cstring, char *append_str)
     while((*append_str) != '\0')
     {
         word = NULL;
-        if(cstring -> len % INIT_LEN == 0 && cstring -> len != 0)
+        if(cstring -> len % INIT_CSTRING_LEN == 0 && cstring -> len != 0)
         {
-            cstring = (CString *)realloc(cstring, cstring -> len + INIT_LEN);
+            cstring = (CString *)realloc(cstring, cstring -> len + INIT_CSTRING_LEN);
             printf("reallo\n");
             if(cstring == NULL)
             {

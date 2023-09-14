@@ -1,3 +1,10 @@
+/**
+ * @author climatex
+ * @date 2023-Sep-11
+ * @version 1.0.1
+ * @file cchar.h
+*/
+
 #ifndef __CCHAR_H__
 #define __CCHAR_H__
 

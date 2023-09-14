@@ -1,3 +1,10 @@
+/**
+ * @author climatex
+ * @date 2023-Sep-11
+ * @version 1.0.1
+ * @file cstring.h
+*/
+
 #ifndef __CSTRING_H__
 #define __CSTRING_H__
 
@@ -19,7 +26,7 @@
 #define ENCODING_4_MASK     0xF8
 #define ENCODING_4_RESULT   0xF0
 
-#define INIT_LEN            100
+#define INIT_CSTRING_LEN            100
 
 //status codes
 #define SUCCESS             0
