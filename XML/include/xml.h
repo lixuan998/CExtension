@@ -14,6 +14,7 @@
 
 typedef struct _XNode{
     CString *node_name;
+    CString *content;
     List *attribute_keys;
     List *attribute_values;
     List *childs;

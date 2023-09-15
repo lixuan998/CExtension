@@ -17,6 +17,7 @@ Xnode * create_xnode()
     xnode -> childs = create_list();
     xnode -> parent = NULL;
     xnode -> node_name = NULL;
+    xnode -> content = NULL;
     return xnode;
 }
 
