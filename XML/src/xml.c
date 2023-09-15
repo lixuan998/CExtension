@@ -6,9 +6,6 @@
 */
 #include "xml.h"
 
-static Xnode *xml_root_node;
-static XHeader *xml_header;
-
 static char lt[] = "<";
 static int lt_pos = 0;
 static char rt[] = ">";
@@ -20,6 +17,8 @@ static char q_mark[] = "?";
 static char exclamation[] = "!";
 static char dash[] = "-";
 static char quates[] = "\"";
+static char newline[] = "\n";
+static char return_mark[] = "\r";
 
 Xnode * create_xnode()
 {
@@ -34,6 +33,7 @@ Xnode * create_xnode()
     xnode -> begin_gt = -1;
     xnode -> end_lt = -1;
     xnode -> end_gt = -1;
+    xnode -> depth = 0;
     xnode -> label_closed = FALSE;
     return xnode;
 }
@@ -49,12 +49,15 @@ XHeader * create_xheader()
     xheader -> attribute_values = create_list();
     xheader -> file_type = NULL;
     xheader -> label_closed = FALSE;
+    return xheader;
 }
 
-int analyze_xml(char *xml_file)
+int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
 {
-    xml_root_node = create_xnode();
-    xml_header = create_xheader();
+    *root_node = create_xnode();
+    Xnode *xml_root_node = *root_node;
+    *header = create_xheader();
+    XHeader *xml_header = *header;
     Stack *stack = create_stack();
     CString *xml_cstring = create_cstring(xml_file);
     int find_lt, find_gt;
@@ -80,6 +83,7 @@ int analyze_xml(char *xml_file)
                 if(stack -> top < 0)
                 {
                     perror ("in func \"analyze_xml\": empty stack\r\n");
+                    free_stack(stack);
                     return STACK_EMPTY_ERROR;
                 } 
                 Xnode *close_xnode = (Xnode *)pop_stack(stack);
@@ -115,11 +119,12 @@ int analyze_xml(char *xml_file)
                     analyze_xnode(new_xml_node, substr_cstring(xml_cstring, lt_pos + 1, gt_pos - lt_pos - 2));
                     Xnode *parent_node = (Xnode *)top_stack(stack);
                     new_xml_node -> parent = parent_node;
+                    new_xml_node -> depth = parent_node -> depth + 1;
                     insert_list(parent_node -> childs, (void *)new_xml_node, APPEND);
                 }
             }
             else if(strcmp(xml_cstring -> data[lt_pos + 1] -> data, q_mark) == 0&&
-                    strcmp(xml_cstring -> data[gt_pos - 1] -> data, slash) == 0)
+                    strcmp(xml_cstring -> data[gt_pos - 1] -> data, q_mark) == 0)
             {
                 
             }
@@ -145,6 +150,7 @@ int analyze_xml(char *xml_file)
                     analyze_xnode(new_xml_node, substr_cstring(xml_cstring, lt_pos + 1, gt_pos - lt_pos - 1));
                     Xnode *parent_node = (Xnode *)top_stack(stack);
                     new_xml_node -> parent = parent_node;
+                    new_xml_node -> depth = parent_node -> depth + 1;
                     insert_list(parent_node -> childs, (void *)new_xml_node, APPEND);
                     push_stack(stack, (void *)new_xml_node);
                 }
@@ -153,8 +159,76 @@ int analyze_xml(char *xml_file)
             find_lt = find_gt = FALSE;
         }
     }
-    
+    free_stack(stack);
     return SUCCESS;
+}
+
+void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
+{
+    for(int i = 0; i < root_node -> depth; ++ i)
+    {
+        append_cstring(phrased_xml, "    ");
+    }
+    append_cstring(phrased_xml, "<");
+    append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
+    
+    for(int i = 0; i < root_node -> attribute_keys -> len; ++ i)
+    {
+        CString *attribute = (CString *)(find_list(root_node -> attribute_keys, i + 1) -> data);
+        CString *value = (CString *)(find_list(root_node -> attribute_values, i + 1) -> data);
+
+        if(attribute == NULL || value == NULL)
+        {
+            break;
+        }
+        append_cstring(phrased_xml, " ");
+        append_cstring(phrased_xml, raw_cstring(attribute));
+        append_cstring(phrased_xml, "=\"");
+        append_cstring(phrased_xml, raw_cstring(value));
+        append_cstring(phrased_xml, "\"");
+    }
+    append_cstring(phrased_xml, ">");
+    if(root_node -> content != NULL)
+    {
+        append_cstring(phrased_xml, raw_cstring(root_node -> content)); 
+        append_cstring(phrased_xml, "</");
+        append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
+        append_cstring(phrased_xml, ">\r\n");
+    }
+    else
+    {
+        append_cstring(phrased_xml, "\r\n");
+    }
+    for(int i = 0; i < root_node -> childs -> len; ++ i)
+    {
+        Xnode *child = (Xnode *)(find_list(root_node -> childs, i + 1) -> data);
+        f_xnode_to_xml(child, phrased_xml);
+    }
+}
+
+void t_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
+{
+    for(int i = 0; i < root_node -> childs -> len; ++ i)
+    {
+        Xnode *child = (Xnode *)(find_list(root_node -> childs, i + 1) -> data);
+        t_xnode_to_xml(child, phrased_xml);
+    }
+    if(root_node -> content == NULL)
+    {
+        for(int i = 0; i < root_node -> depth; ++ i)
+        {
+            append_cstring(phrased_xml, "    ");
+        }
+        append_cstring(phrased_xml, "</");
+        append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
+        append_cstring(phrased_xml, ">\r\n");
+    }
+}
+
+void phrase_to_xml(XHeader *header, Xnode *root_node, CString *phrased_xml)
+{
+    f_xnode_to_xml(root_node, phrased_xml);
+    t_xnode_to_xml(root_node, phrased_xml);
 }
 
 int analyze_xnode(Xnode *xnode, CString *xnode_info)
@@ -164,7 +238,9 @@ int analyze_xnode(Xnode *xnode, CString *xnode_info)
     for(; idx < xnode_info -> len; ++ idx)
     {
         char *cur_cchar_data = xnode_info -> data[idx] -> data;
-        if(strcmp(cur_cchar_data, space) == 0)
+        if(strcmp(cur_cchar_data, space) == 0||
+           strcmp(cur_cchar_data, newline) == 0||
+           strcmp(cur_cchar_data, return_mark) == 0)
         {
             idx ++;
             break;
@@ -180,7 +256,10 @@ int analyze_xnode(Xnode *xnode, CString *xnode_info)
         for(; idx < xnode_info -> len; ++ idx)
         {
             char *cur_cchar_data = xnode_info -> data[idx] -> data;
-            if(strcmp(cur_cchar_data, space) != 0)
+            
+            if(strcmp(cur_cchar_data, space) != 0&&
+               strcmp(cur_cchar_data, newline) != 0&&
+               strcmp(cur_cchar_data, return_mark) != 0)
             {
                 if(match_status == 0)
                 {
@@ -229,7 +308,6 @@ int analyze_xnode(Xnode *xnode, CString *xnode_info)
                         continue;
                     }
                     insert_list(xnode -> attribute_keys, (void *)attribute, APPEND);
-                    printf("ATTRIBUTE: %s\n", raw_cstring(attribute));
                     attribute = NULL;
                     match_status = 0;
                 }
@@ -240,37 +318,49 @@ int analyze_xnode(Xnode *xnode, CString *xnode_info)
             }
         }
     }
-
+    return SUCCESS;
 }
 
-void print_recursive(Xnode *node, int tab_cnt)
+void print_xnode_recursive(Xnode *node)
 {
-    for(int i = 0; i < 1 && tab_cnt > 0; ++ i)
+    for(int i = 0; i < 1 && node -> depth > 0; ++ i)
     {
-        for(int j = 0; j < tab_cnt - 1; ++ j)
-            printf("|    ");
-        printf("|\n");
+        for(int j = 0; j < node -> depth - 1; ++ j)
+            printf("    ");
+        printf("\n");
     }
     printf("|");
-    for(int i = 0; i < tab_cnt - 1; i++) printf("    |");
-    for(int i = 0; i < 4 && tab_cnt > 0; i++)
+    for(int i = 0; i < node -> depth - 1; i++) printf("    |");
+    for(int i = 0; i < 4 && node -> depth > 0; i++)
     printf("-");
-    printf("%s ", raw_cstring(node->node_name));
-    for(int i = 0; i < node -> attribute_keys -> len; ++ i)
+    printf("%s ", raw_cstring(node -> node_name));
+    if(node -> content != NULL)
     {
-        CString *attr = (CString *)(find_list(node -> attribute_keys, i + 1) -> data);
-        CString *val = (CString *)(find_list(node -> attribute_values, i + 1) -> data);
-        if(attr == NULL || val == NULL) continue;
-        printf("%s = \"%s\"\n", raw_cstring(attr), raw_cstring(val));
+        printf("%s ", raw_cstring(node -> content));
+    }
+    printf("depth: %d ", node -> depth);
+    List *attributes = node -> attribute_keys;
+    List *values = node -> attribute_values;
+
+    for(int i = 0; i < attributes -> len; ++ i)
+    {
+        CString *attribute = (CString *)(find_list(attributes, i + 1) -> data);
+        CString *value = (CString *)(find_list(values, i + 1) -> data); 
+        if(attribute == NULL || value == NULL)
+        {
+            continue;
+        }
+        printf("%s=\"%s\" ", raw_cstring(attribute), raw_cstring(value));
     }
     for(int i = 0; i < node -> childs -> len; ++ i)
     {
         Xnode *next = (Xnode *)(find_list(node -> childs, i + 1) -> data);
-        print_recursive(next, tab_cnt + 1);
+        print_xnode_recursive(next);
     }
 }
 
-void test()
+void print_xml_tree(XHeader *header, Xnode *root_node)
 {
-    print_recursive(xml_root_node, 0);
+    print_xnode_recursive(root_node);
+    printf("\n");
 }

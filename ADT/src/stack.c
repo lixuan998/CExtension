@@ -15,6 +15,15 @@ Stack * create_stack()
     return stack;
 }
 
+void free_stack(Stack *stack)
+{
+    if(stack -> data != NULL)
+    {
+        free(stack -> data);
+    }
+    free(stack);
+}
+
 void * push_stack(Stack *stack, void * new_data)
 {
     if(stack == NULL)

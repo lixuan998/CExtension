@@ -12,11 +12,11 @@
 #include "../../ADT/include/stack.h"
 #include "../../Basic/include/cstring.h"
 
-#define FALSE           0
-#define TRUE            1
+#define FALSE                   0
+#define TRUE                    1
 
-#define SUCCESS              0
-#define STACK_EMPTY_ERROR    -1
+#define SUCCESS                 0
+#define STACK_EMPTY_ERROR       -1
 
 typedef struct _Xnode{
     int begin_lt;
@@ -24,6 +24,7 @@ typedef struct _Xnode{
     int end_lt;
     int end_gt;
     int label_closed;
+    int depth;
     CString *node_name;
     CString *content;
     List *attribute_keys;
@@ -46,11 +47,18 @@ typedef struct _XHeader{
 Xnode * create_xnode();
 XHeader * create_xheader();
 
-int analyze_xml(char *xml_file);
+int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file);
 
+void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml);
+
+void t_xnode_to_xml(Xnode *root_node, CString *phrased_xml);
+
+void phrase_to_xml(XHeader *header, Xnode *root_node, CString *phrased_xml);
+
+int analyze_xheader(Xnode *xheader, CString *xheader_info);
 int analyze_xnode(Xnode *xnode, CString *xnode_info);
 
-void print_recursive(Xnode *node, int tab_cnt);
+void print_xnode_recursive(Xnode *node);
 
-void test();
+void print_xml_tree(XHeader *header, Xnode *root_node);
 #endif  // __XML_H__

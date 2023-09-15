@@ -19,6 +19,7 @@ typedef struct _Stack{
 } Stack;
 
 Stack * create_stack();
+void free_stack(Stack *stack);
 
 void * push_stack(Stack *stack, void * new_data);
 void * top_stack(Stack *stack);

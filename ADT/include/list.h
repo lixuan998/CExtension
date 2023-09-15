@@ -31,6 +31,7 @@ typedef struct _List{
  * @return a pointer to a initialized list
 */
 List * create_list();
+void free_list(List * list);
 
 /**
  * @brief find the list node at the given index, note that the index starts from 1

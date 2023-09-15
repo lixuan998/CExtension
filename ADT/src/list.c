@@ -23,6 +23,16 @@ List * create_list()
     return list;
 }
 
+void free_list(List * list)
+{
+    while(list != NULL)
+    {
+        List * next = list -> next;
+        free(list);
+        list = next;
+    }
+}
+
 List * find_list(List * list, int idx)
 {
     List * slider = list;
