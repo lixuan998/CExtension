@@ -22,7 +22,7 @@ CString * create_cstring(char *data)
         perror("in func \"create_cstring\": cstring -> data malloc failed");
         return NULL;
     }
-    cstring = append_cstring(cstring, data);
+    append_cstring(cstring, data);
     if(cstring == NULL)
     {
         perror("in func \"create_cstring\": append_cstring failed");
@@ -30,17 +30,19 @@ CString * create_cstring(char *data)
         free(cstring);
         cstring = NULL;
     }
-    printf("len2: %d\n", cstring -> len);
     return cstring;
 }
 
-CString * append_cstring(CString * cstring, char *append_str)
+void append_cstring(CString * cstring, char *append_str)
 {
-    
+    if(append_str == NULL)
+    {
+        return;
+    }
     if(cstring == NULL)
     {
         perror("in func \"append_cstring\": cstring is null");
-        return NULL;
+        return;
     }
     char *word;
     while((*append_str) != '\0')
@@ -48,12 +50,11 @@ CString * append_cstring(CString * cstring, char *append_str)
         word = NULL;
         if(cstring -> len % INIT_CSTRING_LEN == 0 && cstring -> len != 0)
         {
-            cstring = (CString *)realloc(cstring, cstring -> len + INIT_CSTRING_LEN);
-            printf("reallo\n");
-            if(cstring == NULL)
+            cstring -> data = (CChar **)realloc(cstring -> data, (cstring -> len + INIT_CSTRING_LEN) * sizeof(struct _CChar *));
+            if(cstring -> data == NULL)
             {
                 perror("in func \"append_cstring\": realloc failed");
-                return NULL;
+                return;
             }
         }
         if(((*append_str) & ENCODING_1_MASK) == ENCODING_1_RESULT)
@@ -62,7 +63,7 @@ CString * append_cstring(CString * cstring, char *append_str)
             if(word == NULL)
             {
                 perror("in func \"append_cstring\": malloc failed");
-                return NULL;
+                return;
             }
             memcpy(word, append_str, 1 * sizeof(char));
             word[1] = '\0';
@@ -74,7 +75,7 @@ CString * append_cstring(CString * cstring, char *append_str)
             if(word == NULL)
             {
                 perror("in func \"append_cstring\": malloc failed");
-                return NULL;
+                return;
             }
             memcpy(word, append_str, 2 * sizeof(char));
             word[2] = '\0';
@@ -86,7 +87,7 @@ CString * append_cstring(CString * cstring, char *append_str)
             if(word == NULL)
             {
                 perror("in func \"append_cstring\": malloc failed");
-                return NULL;
+                return;
             }
             memcpy(word, append_str, 3 * sizeof(char));
             word[3] = '\0';
@@ -98,7 +99,7 @@ CString * append_cstring(CString * cstring, char *append_str)
             if(word == NULL)
             {
                 perror("in func \"append_cstring\": malloc failed");
-                return NULL;
+                return;
             }
             memcpy(word, append_str, 4 * sizeof(char));
             word[4] = '\0';
@@ -107,11 +108,11 @@ CString * append_cstring(CString * cstring, char *append_str)
         else
         {
             perror("in func \"append_cstring\": unknown encoding type");
-            return NULL;
+            return;
         }
         cstring -> data[cstring -> len ++] = create_cchar(word);
     }
-    return cstring;
+    return;
 }
 
 char * raw_cstring(CString * cstring)
@@ -121,9 +122,7 @@ char * raw_cstring(CString * cstring)
     {
         CChar *cchar = cstring -> data[i];
         data_len += cchar -> len;
-        printf("%d, %s\n", i, cchar -> data); 
     }
-
     char *raw_data = (char *)malloc(sizeof(char) * data_len);
     char *ptr = raw_data;
     for(int i = 0; i < cstring -> len; ++ i)
@@ -140,7 +139,7 @@ CString * substr_cstring(CString *origin, int from, int length)
 {
     char *substr_data;
     int data_len = 1;
-    for(int i = from; i < length; ++ i)
+    for(int i = from; i < from + length; ++ i)
     {
         CChar *cchar = origin -> data[i];
         data_len += cchar -> len;
@@ -148,7 +147,7 @@ CString * substr_cstring(CString *origin, int from, int length)
 
     substr_data = (char *)malloc(sizeof(char) * data_len);
     char *ptr = substr_data;
-    for(int i = from; i < length; ++ i)
+    for(int i = from; i < from + length; ++ i)
     {
         CChar *cchar = origin -> data[i];
         memcpy(ptr, cchar -> data, cchar -> len * sizeof(char));

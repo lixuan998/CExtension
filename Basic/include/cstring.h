@@ -26,7 +26,7 @@
 #define ENCODING_4_MASK     0xF8
 #define ENCODING_4_RESULT   0xF0
 
-#define INIT_CSTRING_LEN            100
+#define INIT_CSTRING_LEN    1024
 
 //status codes
 #define SUCCESS             0
@@ -44,7 +44,7 @@ typedef struct _CString{
 } CString;
 
 CString * create_cstring(char *data);
-CString * append_cstring(CString * cstring, char *append_str);
+void append_cstring(CString * cstring, char *append_str);
 char * raw_cstring(CString * cstring);
 CString * substr_cstring(CString *origin, int from, int length);
 

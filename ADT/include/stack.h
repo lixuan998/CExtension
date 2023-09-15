@@ -21,6 +21,6 @@ typedef struct _Stack{
 Stack * create_stack();
 
 void * push_stack(Stack *stack, void * new_data);
-
+void * top_stack(Stack *stack);
 void * pop_stack(Stack * stack);
 #endif //   __STACK_H__
