@@ -8,6 +8,10 @@
 #ifndef __CSTRING_H__
 #define __CSTRING_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //charset encoding definitions
 #define ENCODING_1          1
 #define ENCODING_2          2
@@ -47,5 +51,9 @@ CString * create_cstring(char *data);
 void append_cstring(CString * cstring, char *append_str);
 char * raw_cstring(CString * cstring);
 CString * substr_cstring(CString *origin, int from, int length);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  //  __CSTRING_H__

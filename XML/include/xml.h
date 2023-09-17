@@ -8,6 +8,10 @@
 #ifndef __XML_H__
 #define __XML_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../../ADT/include/list.h"
 #include "../../ADT/include/stack.h"
 #include "../../Basic/include/cstring.h"
@@ -49,4 +53,9 @@ int analyze_xnode(Xnode *xnode, CString *xnode_info);
 void print_xnode_recursive(Xnode *node);
 
 void print_xml_tree(Xnode *root_node);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif  // __XML_H__

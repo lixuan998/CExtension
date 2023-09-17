@@ -8,6 +8,10 @@
 #ifndef __STACK_H__
 #define __STACK_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define INIT_STACK_SIZE 100
 
 #include <stdlib.h>
@@ -24,4 +28,9 @@ void free_stack(Stack *stack);
 void * push_stack(Stack *stack, void * new_data);
 void * top_stack(Stack *stack);
 void * pop_stack(Stack * stack);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //   __STACK_H__

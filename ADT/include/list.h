@@ -4,7 +4,9 @@
  * @version 1.0.1
  * @file list.h
 */
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifndef _LIST_H_
 #define _LIST_H_
 
@@ -57,4 +59,8 @@ int insert_list(List * list, void * new_data, int pos);
  * @return return 0 if the operation succeeded, negative value otherwise
 */
 int remove_list(List * list, int idx);
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _LIST_H_
