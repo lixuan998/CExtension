@@ -17,6 +17,8 @@
 
 #define SUCCESS                 0
 #define STACK_EMPTY_ERROR       -1
+#define NULL_PTR_ERROR          -2
+#define INSERT_LIST_ERROR       -3
 
 typedef struct _Xnode{
     int begin_lt;
@@ -24,6 +26,7 @@ typedef struct _Xnode{
     int end_lt;
     int end_gt;
     int label_closed;
+    int is_header;
     int depth;
     CString *node_name;
     CString *content;
@@ -33,32 +36,17 @@ typedef struct _Xnode{
     struct _Xnode *parent;
 } Xnode;
 
-typedef struct _XHeader{
-    int begin_lt;
-    int begin_gt;
-    int end_lt;
-    int end_gt;
-    int label_closed;
-    CString *file_type;
-    List *attribute_keys;
-    List *attribute_values;
-} XHeader;
+Xnode * create_xnode(int is_header, char *node_name, char *content, List *attribute_keys, List *attribute_values);
 
-Xnode * create_xnode();
-XHeader * create_xheader();
+int add_child(Xnode *parent, Xnode *child);
 
-int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file);
+int analyze_xml(Xnode **root_node, char *xml_file);
 
-void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml);
+void phrase_to_xml(Xnode *root_node, CString *phrased_xml);
 
-void t_xnode_to_xml(Xnode *root_node, CString *phrased_xml);
-
-void phrase_to_xml(XHeader *header, Xnode *root_node, CString *phrased_xml);
-
-int analyze_xheader(Xnode *xheader, CString *xheader_info);
 int analyze_xnode(Xnode *xnode, CString *xnode_info);
 
 void print_xnode_recursive(Xnode *node);
 
-void print_xml_tree(XHeader *header, Xnode *root_node);
+void print_xml_tree(Xnode *root_node);
 #endif  // __XML_H__

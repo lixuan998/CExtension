@@ -20,11 +20,25 @@ static char quates[] = "\"";
 static char newline[] = "\n";
 static char return_mark[] = "\r";
 
-Xnode * create_xnode()
+Xnode * create_xnode(int is_header, char *node_name, char *content, List *attribute_keys, List *attribute_values)
 {
     Xnode *xnode = (Xnode *)malloc(sizeof(Xnode));
-    xnode -> attribute_keys = create_list();
-    xnode -> attribute_values = create_list();
+    if(attribute_keys == NULL)
+    {
+        xnode -> attribute_keys = create_list();    
+    }
+    else
+    {
+        xnode -> attribute_keys = attribute_keys;
+    }
+    if(attribute_values == NULL)
+    {
+        xnode -> attribute_values = create_list();
+    }
+    else
+    {
+        xnode -> attribute_values = attribute_values;
+    }
     xnode -> childs = create_list();
     xnode -> parent = NULL;
     xnode -> node_name = NULL;
@@ -35,29 +49,69 @@ Xnode * create_xnode()
     xnode -> end_gt = -1;
     xnode -> depth = 0;
     xnode -> label_closed = FALSE;
+    xnode -> is_header = is_header;
+
+    if(node_name != NULL)
+    {
+        xnode -> node_name = create_cstring(node_name);
+        xnode -> label_closed = TRUE;  
+    }
+    if(content != NULL)
+    {
+        xnode -> content = create_cstring(content);
+    }
+
     return xnode;
 }
 
-XHeader * create_xheader()
+Xnode * create_xheader()
 {
-    XHeader *xheader = (XHeader *)malloc(sizeof(XHeader));
+    Xnode *xheader = (Xnode *)malloc(sizeof(Xnode));
     xheader -> begin_lt = -1;
     xheader -> begin_gt = -1;
     xheader -> end_lt = -1;
     xheader -> end_gt = -1;
     xheader -> attribute_keys = create_list();
     xheader -> attribute_values = create_list();
-    xheader -> file_type = NULL;
+    xheader -> node_name = NULL;
     xheader -> label_closed = FALSE;
     return xheader;
 }
 
-int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
+int add_child(Xnode *parent, Xnode *child)
 {
-    *root_node = create_xnode();
+    if(parent == NULL)
+    {
+        perror ("in func \"add_child\": parent pointer is null\r\n");
+        return NULL_PTR_ERROR;
+    }
+    if(child == NULL)
+    {
+        perror ("in func \"add_child\": child pointer is null\r\n");
+        return NULL_PTR_ERROR;
+    }
+    if(parent -> is_header)
+    {
+        child -> depth = parent -> depth;
+    }
+    else
+    {
+        child -> depth = parent -> depth + 1;
+    }
+    int ret = insert_list(parent -> childs, (void *)child, APPEND);
+    if(ret != 0)
+    {
+        perror ("in func \"add_child\": fail to insert child node into parent node\r\n");
+        return INSERT_LIST_ERROR;
+    }
+    child -> parent = parent;
+    return SUCCESS;
+}
+
+int analyze_xml(Xnode **root_node, char *xml_file)
+{
+    *root_node = create_xnode(FALSE, NULL, NULL, NULL, NULL);
     Xnode *xml_root_node = *root_node;
-    *header = create_xheader();
-    XHeader *xml_header = *header;
     Stack *stack = create_stack();
     CString *xml_cstring = create_cstring(xml_file);
     int find_lt, find_gt;
@@ -110,7 +164,7 @@ int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
                 }
                 else
                 {
-                    Xnode *new_xml_node = create_xnode();
+                    Xnode *new_xml_node = create_xnode(FALSE, NULL, NULL, NULL, NULL);
                     new_xml_node -> begin_lt = lt_pos;
                     new_xml_node -> begin_gt = gt_pos;
                     new_xml_node -> end_lt = lt_pos;
@@ -119,13 +173,56 @@ int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
                     analyze_xnode(new_xml_node, substr_cstring(xml_cstring, lt_pos + 1, gt_pos - lt_pos - 2));
                     Xnode *parent_node = (Xnode *)top_stack(stack);
                     new_xml_node -> parent = parent_node;
-                    new_xml_node -> depth = parent_node -> depth + 1;
-                    insert_list(parent_node -> childs, (void *)new_xml_node, APPEND);
+                    if(parent_node -> is_header)
+                    {
+                        new_xml_node -> depth = parent_node -> depth;
+                    }
+                    else
+                    {
+                        new_xml_node -> depth = parent_node -> depth + 1;
+                    }
+                    int ret = add_child(parent_node, new_xml_node);
+                    if(ret != 0)
+                    {
+                        perror ("in func \"analyze_xml\": fail to add child node\r\n");
+                        return INSERT_LIST_ERROR;
+                    }
                 }
             }
             else if(strcmp(xml_cstring -> data[lt_pos + 1] -> data, q_mark) == 0&&
                     strcmp(xml_cstring -> data[gt_pos - 1] -> data, q_mark) == 0)
             {
+                if(stack -> top < 0)
+                {
+                    xml_root_node -> begin_lt = lt_pos;
+                    xml_root_node -> begin_gt = gt_pos;
+                    xml_root_node -> end_lt = lt_pos;
+                    xml_root_node -> end_gt = gt_pos;
+                    xml_root_node -> label_closed = TRUE;
+                    xml_root_node -> is_header = TRUE;  
+                    analyze_xnode(xml_root_node, substr_cstring(xml_cstring, lt_pos + 2, gt_pos - lt_pos - 3));
+                    push_stack(stack, xml_root_node);
+                }
+                else
+                {
+                    Xnode *new_xml_node = create_xnode(FALSE, NULL, NULL, NULL, NULL);
+                    new_xml_node -> begin_lt = lt_pos;
+                    new_xml_node -> begin_gt = gt_pos;
+                    new_xml_node -> end_lt = lt_pos;
+                    new_xml_node -> end_gt = gt_pos;
+                    new_xml_node -> label_closed = TRUE;
+                    new_xml_node -> is_header = TRUE; 
+                    analyze_xnode(new_xml_node, substr_cstring(xml_cstring, lt_pos + 2, gt_pos - lt_pos - 3));
+                    Xnode *parent_node = (Xnode *)top_stack(stack);
+                    new_xml_node -> parent = parent_node;
+                    new_xml_node -> depth = parent_node -> depth;
+                    int ret = add_child(parent_node, new_xml_node);
+                    if(ret != 0)
+                    {
+                        perror ("in func \"analyze_xml\": fail to add child node\r\n");
+                        return INSERT_LIST_ERROR;
+                    }
+                }
                 
             }
             else if(strcmp(xml_cstring -> data[lt_pos + 1] -> data, exclamation) == 0)
@@ -144,14 +241,28 @@ int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
                 }
                 else
                 {
-                    Xnode *new_xml_node = create_xnode();
+                    Xnode *new_xml_node = create_xnode(FALSE, NULL, NULL, NULL, NULL);
                     new_xml_node -> begin_lt = lt_pos;
                     new_xml_node -> begin_gt = gt_pos;
                     analyze_xnode(new_xml_node, substr_cstring(xml_cstring, lt_pos + 1, gt_pos - lt_pos - 1));
                     Xnode *parent_node = (Xnode *)top_stack(stack);
                     new_xml_node -> parent = parent_node;
-                    new_xml_node -> depth = parent_node -> depth + 1;
-                    insert_list(parent_node -> childs, (void *)new_xml_node, APPEND);
+                    printf("parent: %s depth: %d is header: %d\n", raw_cstring(parent_node -> node_name), parent_node -> depth, parent_node -> is_header);
+                    
+                    if(parent_node -> is_header)
+                    {
+                        new_xml_node -> depth = parent_node -> depth;
+                    }
+                    else
+                    {
+                        new_xml_node -> depth = parent_node -> depth + 1;
+                    }
+                    int ret = add_child(parent_node, new_xml_node);
+                    if(ret != 0)
+                    {
+                        perror ("in func \"analyze_xml\": fail to add child node\r\n");
+                        return INSERT_LIST_ERROR;
+                    }
                     push_stack(stack, (void *)new_xml_node);
                 }
             }
@@ -163,13 +274,33 @@ int analyze_xml(XHeader **header, Xnode **root_node, char *xml_file)
     return SUCCESS;
 }
 
-void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
+void phrase_to_xml(Xnode *root_node, CString *phrased_xml)
 {
+    if(root_node -> parent != NULL)
+    {
+        if(root_node -> parent -> is_header == FALSE)
+        {
+            root_node -> depth = root_node -> parent -> depth + 1;
+        }
+        else
+        {
+            root_node -> depth = root_node -> parent -> depth;
+        }
+    }
     for(int i = 0; i < root_node -> depth; ++ i)
     {
         append_cstring(phrased_xml, "    ");
     }
-    append_cstring(phrased_xml, "<");
+
+    if(root_node -> is_header)
+    {
+        append_cstring(phrased_xml, "<?");
+    }
+    else
+    {
+        append_cstring(phrased_xml, "<");
+    }
+    
     append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
     
     for(int i = 0; i < root_node -> attribute_keys -> len; ++ i)
@@ -187,13 +318,18 @@ void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
         append_cstring(phrased_xml, raw_cstring(value));
         append_cstring(phrased_xml, "\"");
     }
-    append_cstring(phrased_xml, ">");
+    if(root_node -> is_header)
+    {
+        append_cstring(phrased_xml, "?>\r\n");
+    }
+    else
+    {
+        append_cstring(phrased_xml, ">");
+    }
+    
     if(root_node -> content != NULL)
     {
         append_cstring(phrased_xml, raw_cstring(root_node -> content)); 
-        append_cstring(phrased_xml, "</");
-        append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
-        append_cstring(phrased_xml, ">\r\n");
     }
     else
     {
@@ -202,20 +338,12 @@ void f_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
     for(int i = 0; i < root_node -> childs -> len; ++ i)
     {
         Xnode *child = (Xnode *)(find_list(root_node -> childs, i + 1) -> data);
-        f_xnode_to_xml(child, phrased_xml);
+        phrase_to_xml(child, phrased_xml);
     }
-}
 
-void t_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
-{
-    for(int i = 0; i < root_node -> childs -> len; ++ i)
+    if(root_node -> is_header == FALSE)
     {
-        Xnode *child = (Xnode *)(find_list(root_node -> childs, i + 1) -> data);
-        t_xnode_to_xml(child, phrased_xml);
-    }
-    if(root_node -> content == NULL)
-    {
-        for(int i = 0; i < root_node -> depth; ++ i)
+        for(int i = 0; i < root_node -> depth && root_node -> content == NULL; ++ i)
         {
             append_cstring(phrased_xml, "    ");
         }
@@ -223,12 +351,7 @@ void t_xnode_to_xml(Xnode *root_node, CString *phrased_xml)
         append_cstring(phrased_xml, raw_cstring(root_node -> node_name));
         append_cstring(phrased_xml, ">\r\n");
     }
-}
-
-void phrase_to_xml(XHeader *header, Xnode *root_node, CString *phrased_xml)
-{
-    f_xnode_to_xml(root_node, phrased_xml);
-    t_xnode_to_xml(root_node, phrased_xml);
+    
 }
 
 int analyze_xnode(Xnode *xnode, CString *xnode_info)
@@ -329,6 +452,7 @@ void print_xnode_recursive(Xnode *node)
             printf("    ");
         printf("\n");
     }
+    if(node -> depth == 0) printf("\n");
     printf("|");
     for(int i = 0; i < node -> depth - 1; i++) printf("    |");
     for(int i = 0; i < 4 && node -> depth > 0; i++)
@@ -338,7 +462,6 @@ void print_xnode_recursive(Xnode *node)
     {
         printf("%s ", raw_cstring(node -> content));
     }
-    printf("depth: %d ", node -> depth);
     List *attributes = node -> attribute_keys;
     List *values = node -> attribute_values;
 
@@ -359,8 +482,8 @@ void print_xnode_recursive(Xnode *node)
     }
 }
 
-void print_xml_tree(XHeader *header, Xnode *root_node)
+void print_xml_tree(Xnode *root_node)
 {
     print_xnode_recursive(root_node);
-    printf("\n");
+    printf("\r\n");
 }
